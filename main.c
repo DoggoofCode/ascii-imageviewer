@@ -1,6 +1,5 @@
 #include <stdio.h> 
 #include <stdlib.h>
-#include <math.h>
 
 typedef struct {
 	int r;
@@ -145,8 +144,8 @@ TerminalPixel* create_image_buffer(Pixel* raw_image_data, ScreenSize terminal_sc
 		for (int x = 0; x < terminal_screen.width; x++){
 			r = 0; g = 0; b = 0;
 			// Sum Pixels
-			for (int y_projected = y*y_block_size; y_projected < floor(y*y_block_size+(int)y_block_size); y_projected++){
-				for (int x_projected = x*x_block_size; x_projected < floor(x*x_block_size+(int)x_block_size); x_projected++){
+			for (int y_projected = y*y_block_size; y_projected < (int)(y*y_block_size+(int)y_block_size); y_projected++){
+				for (int x_projected = x*x_block_size; x_projected < (int)(x*x_block_size+(int)x_block_size); x_projected++){
 					size_t projected_array_position = (int)original_screen.width*(int)y_projected+(int)x_projected;
 					r += raw_image_data[projected_array_position].r;
 					g += raw_image_data[projected_array_position].g;
