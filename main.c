@@ -1,6 +1,5 @@
 #include <stdio.h> 
 #include <stdlib.h>
-#include <math.h>
 
 typedef struct {
 	int r;
@@ -47,9 +46,6 @@ int main(int argc, char *argv[]){
 		TerminalScreen.width *= 2;
 	}
 	TerminalPixel *draw_buffer = create_image_buffer(raw_image_data, TerminalScreen, OriginalImage);
-
-	printf("Original Image: %d, %d\n", OriginalImage.width, OriginalImage.height);
-	printf("Terminal Screen: %d, %d\n", TerminalScreen.width, TerminalScreen.height);
 
 	clear();
 	draw(draw_buffer, TerminalScreen);
@@ -145,8 +141,8 @@ TerminalPixel* create_image_buffer(Pixel* raw_image_data, ScreenSize terminal_sc
 		for (int x = 0; x < terminal_screen.width; x++){
 			r = 0; g = 0; b = 0;
 			// Sum Pixels
-			for (int y_projected = y*y_block_size; y_projected < floor(y*y_block_size+(int)y_block_size); y_projected++){
-				for (int x_projected = x*x_block_size; x_projected < floor(x*x_block_size+(int)x_block_size); x_projected++){
+			for (int y_projected = y*y_block_size; y_projected < (int)(y*y_block_size+(int)y_block_size); y_projected++){
+				for (int x_projected = x*x_block_size; x_projected < (int)(x*x_block_size+(int)x_block_size); x_projected++){
 					size_t projected_array_position = (int)original_screen.width*(int)y_projected+(int)x_projected;
 					r += raw_image_data[projected_array_position].r;
 					g += raw_image_data[projected_array_position].g;
@@ -195,7 +191,7 @@ void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen){
 			} else {
 				chosen = alternative_alpha_list[char_position];
 			}
-			//printf("%d", array_idx);
+			// printf("\x1B[38;2;%i;%i;%im%c\x1B[0m", (int)(draw_buffer[array_idx].r * 255), 0, 0, '#');
 			printf("\x1B[38;2;%i;%i;%im%c\x1B[0m", draw_buffer[array_idx].r, draw_buffer[array_idx].g, draw_buffer[array_idx].b, chosen);
 		}
 		printf("\n");
