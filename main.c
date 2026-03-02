@@ -1,5 +1,6 @@
 #include <stdio.h> 
 #include <stdlib.h>
+#include <unistd.h>
 
 typedef struct {
 	int r;
@@ -25,6 +26,8 @@ TerminalPixel* create_image_buffer(Pixel* raw_image_data, ScreenSize terminal_sc
 void draw(TerminalPixel* image_array, ScreenSize terminal_screen);
 void clear();
 
+const int FPS = 24;
+
 int main(int argc, char *argv[]){
 	if (argc < 2) {
 		printf("No arguments provided, please provide atleast \x1B[1m1\x1B[0m argument\n");
@@ -37,22 +40,31 @@ int main(int argc, char *argv[]){
 
 	// TODO: Ensure that the image is ALWAYS maximised
 	if (OriginalImage.width >= OriginalImage.height) {
-		TerminalScreen.width = 100;
+		TerminalScreen.width = 80;
 		TerminalScreen.height = OriginalImage.height * (float)TerminalScreen.width/OriginalImage.width;
 		TerminalScreen.height /= 2;
 	} else {
-		TerminalScreen.height = 50;
+		TerminalScreen.height = 40;
 		TerminalScreen.width = OriginalImage.width * (float)TerminalScreen.height/OriginalImage.height;
 		TerminalScreen.width *= 2;
 	}
 	TerminalPixel *draw_buffer = create_image_buffer(raw_image_data, TerminalScreen, OriginalImage);
+		
 
 	clear();
-	draw(draw_buffer, TerminalScreen);
+
+	for(int frame_count = 0; frame_count < 1; frame_count++){
+		printf("\x1B[H");
+		
+		draw(draw_buffer, TerminalScreen);
+
+		fflush(stdout);
+		usleep(1000000/FPS);
+	}
+	printf("\x1B[?25h");
 
 	free(draw_buffer);
 	free(raw_image_data);
-	while (1){}
 	return 0;
 }
 
@@ -134,7 +146,6 @@ TerminalPixel* create_image_buffer(Pixel* raw_image_data, ScreenSize terminal_sc
 	TerminalPixel *draw_buffer = calloc(terminal_screen.width*terminal_screen.height, sizeof(TerminalPixel));
 	float x_block_size = (float)original_screen.width/terminal_screen.width;
 	float y_block_size = (float)original_screen.height/terminal_screen.height;
-	printf("X Block Size: %f Y Block Size: %f\n", x_block_size, y_block_size);
 	int r, g, b, block_area;
 	
 	for (int y = 0; y < terminal_screen.height; y++){
@@ -194,12 +205,14 @@ void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen){
 			// printf("\x1B[38;2;%i;%i;%im%c\x1B[0m", (int)(draw_buffer[array_idx].r * 255), 0, 0, '#');
 			printf("\x1B[38;2;%i;%i;%im%c\x1B[0m", draw_buffer[array_idx].r, draw_buffer[array_idx].g, draw_buffer[array_idx].b, chosen);
 		}
-		printf("\n");
+		printf("               ");
+		printf("\n\r");
 	}
 }
 
 void clear() {
 	printf("\x1B[H\x1B[2J");
+	printf("\x1B[?25l");
 }
 
 
