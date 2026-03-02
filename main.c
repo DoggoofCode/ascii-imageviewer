@@ -1,6 +1,7 @@
 #include <stdio.h> 
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 typedef struct {
 	int r;
@@ -23,7 +24,7 @@ typedef struct {
 
 Pixel* read_p6(char filename[], ScreenSize* original_screen_ptr);
 TerminalPixel* create_image_buffer(Pixel* raw_image_data, ScreenSize terminal_screen, ScreenSize original_screen);
-void draw(TerminalPixel* image_array, ScreenSize terminal_screen);
+void draw(TerminalPixel* image_array, ScreenSize terminal_screen, int use_background);
 void clear();
 
 const int FPS = 24;
@@ -40,23 +41,28 @@ int main(int argc, char *argv[]){
 
 	// TODO: Ensure that the image is ALWAYS maximised
 	if (OriginalImage.width >= OriginalImage.height) {
-		TerminalScreen.width = 80;
+		TerminalScreen.width = 120;
 		TerminalScreen.height = OriginalImage.height * (float)TerminalScreen.width/OriginalImage.width;
 		TerminalScreen.height /= 2;
 	} else {
-		TerminalScreen.height = 40;
+		TerminalScreen.height = 60;
 		TerminalScreen.width = OriginalImage.width * (float)TerminalScreen.height/OriginalImage.height;
 		TerminalScreen.width *= 2;
 	}
 	TerminalPixel *draw_buffer = create_image_buffer(raw_image_data, TerminalScreen, OriginalImage);
 		
+	int background_mode;
+	if (argc < 3)
+		background_mode = 0;
+	else if (!strcmp("-b", argv[2]))
+		background_mode = 1;
 
 	clear();
 
 	for(int frame_count = 0; frame_count < 1; frame_count++){
 		printf("\x1B[H");
 		
-		draw(draw_buffer, TerminalScreen);
+		draw(draw_buffer, TerminalScreen, background_mode);
 
 		fflush(stdout);
 		usleep(1000000/FPS);
@@ -180,7 +186,7 @@ TerminalPixel* create_image_buffer(Pixel* raw_image_data, ScreenSize terminal_sc
 	return draw_buffer;
 }
 
-void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen){
+void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen, int use_background){
 	char alpha_list[] =  {'.', ':', '*', '%'};
 	char alternative_alpha_list[] =  {'\'', ';', '=', '#'};
 	char chosen;
@@ -197,13 +203,19 @@ void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen){
 			} else if (draw_buffer[array_idx].alpha <= 1.0) {
 				char_position = 3;
 			}
+			if (use_background)
+				char_position = 3 - char_position;
+
 			if (rand() >> (8*sizeof(int)-2) == 1) {
 				chosen = alpha_list[char_position];
 			} else {
 				chosen = alternative_alpha_list[char_position];
 			}
 			// printf("\x1B[38;2;%i;%i;%im%c\x1B[0m", (int)(draw_buffer[array_idx].r * 255), 0, 0, '#');
-			printf("\x1B[38;2;%i;%i;%im%c\x1B[0m", draw_buffer[array_idx].r, draw_buffer[array_idx].g, draw_buffer[array_idx].b, chosen);
+			if (!use_background)
+				printf("\x1B[38;2;%i;%i;%im%c\x1B[0m", draw_buffer[array_idx].r, draw_buffer[array_idx].g, draw_buffer[array_idx].b, chosen);
+			else
+				printf("\x1B[48;2;%i;%i;%im\x1B[30m%c\x1B[0m", draw_buffer[array_idx].r, draw_buffer[array_idx].g, draw_buffer[array_idx].b, chosen);
 		}
 		printf("               ");
 		printf("\n\r");
