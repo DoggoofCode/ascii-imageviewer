@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/ioctl.h>
 
 typedef struct {
 	int r;
@@ -39,13 +40,26 @@ int main(int argc, char *argv[]){
 
 	Pixel *raw_image_data = read_p6(argv[1], &OriginalImage);
 
-	// TODO: Ensure that the image is ALWAYS maximised
-	if (OriginalImage.width >= OriginalImage.height) {
-		TerminalScreen.width = 120;
+	struct winsize w;
+
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) {
+		printf("Cannot IOCTL");
+		abort();
+		return 1;
+	}
+	
+	// Terminal width to height ratios
+	float term_wth = (float)w.ws_col / w.ws_row;
+	float image_wth = (float)OriginalImage.width / OriginalImage.height;
+
+	if (term_wth <= image_wth) {
+		// Terminal width is the limiting factor
+		TerminalScreen.width = w.ws_col - 1;
 		TerminalScreen.height = OriginalImage.height * (float)TerminalScreen.width/OriginalImage.width;
 		TerminalScreen.height /= 2;
 	} else {
-		TerminalScreen.height = 60;
+		// Terminal height is the limiting factor
+		TerminalScreen.height = w.ws_row - 4;
 		TerminalScreen.width = OriginalImage.width * (float)TerminalScreen.height/OriginalImage.height;
 		TerminalScreen.width *= 2;
 	}
