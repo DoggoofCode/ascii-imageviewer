@@ -25,6 +25,7 @@ typedef struct {
 
 typedef struct {
 	int background_mode;
+	int help;
 } CommandFlags;
 
 Pixel* read_p6(char filename[], ScreenSize* original_screen_ptr);
@@ -36,10 +37,16 @@ CommandFlags get_command_flags(int argc, char** argv);
 const int FPS = 24;
 
 int main(int argc, char *argv[]){
+	CommandFlags flgs = get_command_flags(argc, argv);
 	if (argc < 2) {
-		printf("No arguments provided, please provide atleast \x1B[1m1\x1B[0m argument\n");
+		flgs.help = 1;
+	}
+
+	if (flgs.help) {
+		printf("Usage: imgview [-b] [-p] [-W width] [-H height] [-f] filename\n Display ascii images (and videos soon) in the terminal\n\n\t-h, Displays \x1B[1mthis\x1B[0m help message\n\t-b, Displays the image using the background, used to create more high fideilty image\n\t-p, Prints the file name and size after the image\n\nExamples\n\n\t$ imgview image.ppm\n\t$ imgview image.ppm -b\n\t$ imgview -b image.ppm\n\n");
 		return 1;
 	}
+
 	ScreenSize OriginalImage = {0};
 	ScreenSize TerminalScreen = {0};
 
@@ -53,8 +60,6 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	
-	CommandFlags flgs = get_command_flags(argc, argv);
-
 	// Terminal width to height ratios
 	float term_wth = (float)w.ws_col / w.ws_row;
 	float image_wth = (float)OriginalImage.width / OriginalImage.height;
@@ -250,6 +255,8 @@ CommandFlags get_command_flags(int argc, char** argv) {
 		if (**argv == '-') {
 			if (!strcmp("-b", *argv))
 				flags.background_mode = 1;
+			if (!strcmp("-h", *argv))
+				flags.help = 1;
 		}
 		argv++;
 	}
