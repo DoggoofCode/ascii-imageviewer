@@ -76,7 +76,6 @@ int main(int argc, char *argv[]){
 
 	for(int frame_count = 0; frame_count < 1; frame_count++){
 		printf("\x1B[H");
-		printf("%d", flgs.background_mode);	
 		draw(draw_buffer, TerminalScreen, flgs.background_mode);
 
 		fflush(stdout);
