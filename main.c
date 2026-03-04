@@ -49,8 +49,15 @@ int main(int argc, char *argv[]){
 
 	ScreenSize OriginalImage = {0};
 	ScreenSize TerminalScreen = {0};
+	
+	// Find index of file input
+	char** argv_counter = argv;
+	argv_counter++;
+	while (**argv_counter == '-'){
+		argv_counter++;
+	}
 
-	Pixel *raw_image_data = read_p6(argv[1], &OriginalImage);
+	Pixel *raw_image_data = read_p6(*argv_counter, &OriginalImage);
 
 	struct winsize w;
 
