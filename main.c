@@ -23,10 +23,15 @@ typedef struct {
 	int height;
 } ScreenSize;
 
+typedef struct {
+	int background_mode;
+} CommandFlags;
+
 Pixel* read_p6(char filename[], ScreenSize* original_screen_ptr);
 TerminalPixel* create_image_buffer(Pixel* raw_image_data, ScreenSize terminal_screen, ScreenSize original_screen);
 void draw(TerminalPixel* image_array, ScreenSize terminal_screen, int use_background);
 void clear();
+CommandFlags get_command_flags(int argc, char** argv);
 
 const int FPS = 24;
 
@@ -48,6 +53,8 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	
+	CommandFlags flgs = get_command_flags(argc, argv);
+
 	// Terminal width to height ratios
 	float term_wth = (float)w.ws_col / w.ws_row;
 	float image_wth = (float)OriginalImage.width / OriginalImage.height;
@@ -64,19 +71,13 @@ int main(int argc, char *argv[]){
 		TerminalScreen.width *= 2;
 	}
 	TerminalPixel *draw_buffer = create_image_buffer(raw_image_data, TerminalScreen, OriginalImage);
-		
-	int background_mode;
-	if (argc < 3)
-		background_mode = 0;
-	else if (!strcmp("-b", argv[2]))
-		background_mode = 1;
 
 	clear();
 
 	for(int frame_count = 0; frame_count < 1; frame_count++){
 		printf("\x1B[H");
-		
-		draw(draw_buffer, TerminalScreen, background_mode);
+		printf("%d", flgs.background_mode);	
+		draw(draw_buffer, TerminalScreen, flgs.background_mode);
 
 		fflush(stdout);
 		usleep(1000000/FPS);
@@ -241,4 +242,18 @@ void clear() {
 	printf("\x1B[?25l");
 }
 
+CommandFlags get_command_flags(int argc, char** argv) {
+	CommandFlags flags = {0};
+	// move to first argument 
+	argv++;
 
+	for (int i = 0; i < argc-1; i++) {
+		if (**argv == '-') {
+			if (!strcmp("-b", *argv))
+				flags.background_mode = 1;
+		}
+		argv++;
+	}
+
+	return flags;
+}
