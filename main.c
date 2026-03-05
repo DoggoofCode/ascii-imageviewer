@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
 	}
 
 	if (flgs.help) {
-		printf("Usage: imgview [-b] [-p] [-W width] [-H height] [-f] filename\n Display ascii images (and videos soon) in the terminal\n\n\t-h, Displays \x1B[1mthis\x1B[0m help message\n\t-b, Displays the image using the background, used to create more high fideilty image\n\t-p, Prints the file name and size after the image\n\nExamples\n\n\t$ imgview image.ppm\n\t$ imgview image.ppm -b\n\t$ imgview -b image.ppm\n\n");
+		printf("\nUsage: imgview [-b] [-p] [-W width] [-H height] [-f] filename\n Display ascii images (and videos soon) in the terminal\n\n\t-h, Displays \x1B[1mthis\x1B[0m help message\n\t-b, Displays the image using the background, used to create more high fideilty image\n\t-p, Prints the file name and size after the image\n\nExamples\n\n\t$ imgview image.ppm\n\t$ imgview image.ppm -b\n\t$ imgview -b image.ppm\n\n");
 		return 1;
 	}
 
