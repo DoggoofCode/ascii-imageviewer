@@ -26,34 +26,38 @@ typedef struct {
 typedef struct {
 	int background_mode;
 	int help;
+	int width;
+	int height;
 } CommandFlags;
 
 Pixel* read_p6(char filename[], ScreenSize* original_screen_ptr);
 TerminalPixel* create_image_buffer(Pixel* raw_image_data, ScreenSize terminal_screen, ScreenSize original_screen);
-void draw(TerminalPixel* image_array, ScreenSize terminal_screen, int use_background);
+void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen, CommandFlags flags);
 void clear();
-CommandFlags get_command_flags(int argc, char** argv);
+CommandFlags get_command_flags(int argc, char** argv, int* positional_arguments);
 
 const int FPS = 24;
 
 int main(int argc, char *argv[]){
-	CommandFlags flgs = get_command_flags(argc, argv);
+	int positional_arguments[10] = {0};
+	CommandFlags flgs = get_command_flags(argc, argv, positional_arguments);
+	 
 	if (argc < 2) {
 		flgs.help = 1;
 	}
 
 	if (flgs.help) {
-		printf("\nUsage: imgview [-b] [-p] [-W width] [-H height] [-f] filename\n Display ascii images (and videos soon) in the terminal\n\n\t-h, Displays \x1B[1mthis\x1B[0m help message\n\t-b, Displays the image using the background, used to create more high fideilty image\n\t-p, Prints the file name and size after the image\n\nExamples\n\n\t$ imgview image.ppm\n\t$ imgview image.ppm -b\n\t$ imgview -b image.ppm\n\n");
+		printf("\nUsage: imgview [-b] [-p] [-W width] [-H height] [-f] filename\n Display ascii images (and videos soon) in the terminal\n\n\t-h, Displays \x1B[1mthis\x1B[0m help message\n\t-b, Displays the image using the background, used to create more high fideilty image\n\t-p, Prints the file name and size after the image\n\t-W, Sets the width of the image in cells. If -H is not defined, the aspect ratio is preserved\n\t-H, Sets the height of the image in cells. If -W is not defined, the aspect ratio is preserved\n\nExamples\n\n\t$ imgview image.ppm\n\t$ imgview image.ppm -b\n\t$ imgview -b image.ppm\n\n");
 		return 1;
 	}
 
 	ScreenSize OriginalImage = {0};
 	ScreenSize TerminalScreen = {0};
 	
+	
 	// Find index of file input
 	char** argv_counter = argv;
-	argv_counter++;
-	while (**argv_counter == '-'){
+	for (int i = 0; i < *positional_arguments; i++) {
 		argv_counter++;
 	}
 
@@ -68,27 +72,44 @@ int main(int argc, char *argv[]){
 	}
 	
 	// Terminal width to height ratios
-	float term_wth = (float)w.ws_col / w.ws_row;
-	float image_wth = (float)OriginalImage.width / OriginalImage.height;
-
-	if (term_wth <= image_wth) {
-		// Terminal width is the limiting factor
-		TerminalScreen.width = w.ws_col - 1;
+	if (flgs.width == 0 && flgs.height == 0) {
+		float term_wth = (float)w.ws_col / w.ws_row;
+		float image_wth = (float)OriginalImage.width / OriginalImage.height;
+		if (term_wth <= image_wth) {
+			// Terminal width is the limiting factor
+			TerminalScreen.width = w.ws_col - 1;
+			TerminalScreen.height = OriginalImage.height * (float)TerminalScreen.width/OriginalImage.width;
+			TerminalScreen.height /= 2;
+		} else {
+			// Terminal height is the limiting factor
+			TerminalScreen.height = w.ws_row - 4;
+			TerminalScreen.width = OriginalImage.width * (float)TerminalScreen.height/OriginalImage.height;
+			TerminalScreen.width *= 2;
+		}
+	} else if (flgs.width != 0 && flgs.height == 0) {
+		// Only width is set
+		TerminalScreen.width = flgs.width;
 		TerminalScreen.height = OriginalImage.height * (float)TerminalScreen.width/OriginalImage.width;
 		TerminalScreen.height /= 2;
-	} else {
-		// Terminal height is the limiting factor
-		TerminalScreen.height = w.ws_row - 4;
+	} else if (flgs.width == 0 && flgs.height != 0) {
+		// Only height is set
+		TerminalScreen.height = flgs.height;
 		TerminalScreen.width = OriginalImage.width * (float)TerminalScreen.height/OriginalImage.height;
 		TerminalScreen.width *= 2;
+
+	} else {
+		TerminalScreen.width = flgs.width;
+		TerminalScreen.height = flgs.height;
 	}
+
+
 	TerminalPixel *draw_buffer = create_image_buffer(raw_image_data, TerminalScreen, OriginalImage);
 
 	clear();
 
 	for(int frame_count = 0; frame_count < 1; frame_count++){
 		printf("\x1B[H");
-		draw(draw_buffer, TerminalScreen, flgs.background_mode);
+		draw(draw_buffer, TerminalScreen, flgs);
 
 		fflush(stdout);
 		usleep(1000000/FPS);
@@ -212,7 +233,7 @@ TerminalPixel* create_image_buffer(Pixel* raw_image_data, ScreenSize terminal_sc
 	return draw_buffer;
 }
 
-void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen, int use_background){
+void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen, CommandFlags flags){
 	char alpha_list[] =  {'.', ':', '*', '%'};
 	char alternative_alpha_list[] =  {'\'', ';', '=', '#'};
 	char chosen;
@@ -229,7 +250,7 @@ void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen, int use_backgr
 			} else if (draw_buffer[array_idx].alpha <= 1.0) {
 				char_position = 3;
 			}
-			if (use_background)
+			if (flags.background_mode)
 				char_position = 3 - char_position;
 
 			if (rand() >> (8*sizeof(int)-2) == 1) {
@@ -238,12 +259,13 @@ void draw(TerminalPixel* draw_buffer, ScreenSize terminal_screen, int use_backgr
 				chosen = alternative_alpha_list[char_position];
 			}
 			// printf("\x1B[38;2;%i;%i;%im%c\x1B[0m", (int)(draw_buffer[array_idx].r * 255), 0, 0, '#');
-			if (!use_background)
+			if (!flags.background_mode)
 				printf("\x1B[38;2;%i;%i;%im%c\x1B[0m", draw_buffer[array_idx].r, draw_buffer[array_idx].g, draw_buffer[array_idx].b, chosen);
 			else
 				printf("\x1B[48;2;%i;%i;%im\x1B[30m%c\x1B[0m", draw_buffer[array_idx].r, draw_buffer[array_idx].g, draw_buffer[array_idx].b, chosen);
 		}
-		printf("               ");
+		if (flags.width == 0 && flags.height == 0)
+			printf("               ");
 		printf("\n\r");
 	}
 }
@@ -253,7 +275,7 @@ void clear() {
 	printf("\x1B[?25l");
 }
 
-CommandFlags get_command_flags(int argc, char** argv) {
+CommandFlags get_command_flags(int argc, char** argv, int* positional_arguments) {
 	CommandFlags flags = {0};
 	// move to first argument 
 	argv++;
@@ -264,6 +286,17 @@ CommandFlags get_command_flags(int argc, char** argv) {
 				flags.background_mode = 1;
 			if (!strcmp("-h", *argv))
 				flags.help = 1;
+			if (!strcmp("-W", *argv)) {
+				argv++; i++;
+				flags.width = strtol(*argv, NULL, 10);
+			}
+			if (!strcmp("-H", *argv)) {
+				argv++; i++;
+				flags.height = strtol(*argv, NULL, 10);
+			}
+		} else {
+			*positional_arguments = i + 1;
+			positional_arguments++;
 		}
 		argv++;
 	}
