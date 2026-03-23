@@ -1,5 +1,5 @@
 CC ?= cc
-CFLAGS ?= -O0 -g -fsanitize=address
+CFLAGS ?= -O0 -g # -fsanitize=address
 OBJ = main.o
 
 imageviewer: $(OBJ)

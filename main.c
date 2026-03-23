@@ -4,6 +4,8 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
+#define prog_name "imageviewer"
+
 typedef struct {
 	int r;
 	int g;
@@ -47,7 +49,7 @@ int main(int argc, char *argv[]){
 	}
 
 	if (flgs.help) {
-		printf("\nUsage: imgview [-b] [-p] [-W width] [-H height] [-f] filename\n Display ascii images (and videos soon) in the terminal\n\n\t-h, Displays \x1B[1mthis\x1B[0m help message\n\t-b, Displays the image using the background, used to create more high fideilty image\n\t-p, Prints the file name and size after the image\n\t-W, Sets the width of the image in cells. If -H is not defined, the aspect ratio is preserved\n\t-H, Sets the height of the image in cells. If -W is not defined, the aspect ratio is preserved\n\nExamples\n\n\t$ imgview image.ppm\n\t$ imgview image.ppm -b\n\t$ imgview -b image.ppm\n\n");
+		printf("\nUsage: %s [-b] [-p] [-W width] [-H height] [-f] filename\n Display ascii images (and videos soon) in the terminal\n\n\t-h, Displays \x1B[1mthis\x1B[0m help message\n\t-b, Displays the image using the background, used to create more high fideilty image\n\t-p, Prints the file name and size after the image\n\t-W, Sets the width of the image in cells. If -H is not defined, the aspect ratio is preserved\n\t-H, Sets the height of the image in cells. If -W is not defined, the aspect ratio is preserved\n\nExamples\n\n\t$ %s image.ppm\n\t$ %s image.ppm -b\n\t$ %s -b image.ppm\n\n", prog_name, prog_name, prog_name, prog_name);
 		return 1;
 	}
 
